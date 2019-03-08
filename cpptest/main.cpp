@@ -50,60 +50,10 @@ using mvo = fc::mutable_variant_object;
 namespace bip = boost::interprocess;
 
 
-struct lwc_section_info {
-   lwc_section_info(int a, int b):first(a),last(b){}
-   int                   first;
-   int                   last;
-};
-
-typedef multi_index_container<
-   lwc_section_info,
-   indexed_by<
-      ordered_unique<
-         tag< by_id >,
-         member < lwc_section_info,
-            int,
-            &lwc_section_info::first > >
-   >
->
-   ibc_section_index;
-
-ibc_section_index             local_sections;
-
 int main()
 {
-   lwc_section_info a(1,1), b(2,2), c(3,3), d(4,4),e(4,5);
-
-   auto [aa,bb ] = local_sections.insert(e);
-
-   local_sections.erase(aa);
-
-   auto [cc,dd ] = local_sections.insert(d);
-
-   local_sections.insert(a);
-   local_sections.insert(b);
-   local_sections.insert(c);
-
-   local_sections.insert(d);
-   local_sections.insert(d);
-   local_sections.insert(c);
-   local_sections.insert(c);
-   local_sections.insert(a);
-
-
-
-//   local_sections.insert(local_sections.end(),a);
-//   local_sections.insert(local_sections.end(),b);
-//   local_sections.insert(local_sections.end(),c);
-//   local_sections.insert(local_sections.end(),d);
-
-   for( auto it = local_sections.rbegin(); it != local_sections.rend(); ++it ){
-      ilog("======${n1},${n2}",("n1",it->first)("n2",it->last));
-   }
 
    return 0;
-
-
 }
 
 
