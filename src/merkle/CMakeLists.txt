@@ -1,7 +1,9 @@
 
-add_executable(merkel_test main.cpp)
-target_link_libraries(merkel_test ${LIBRARIES})
+add_executable(incremental_merkle incremental_merkle.cpp)
+target_link_libraries(incremental_merkle ${LIBRARIES})
 
 
-add_executable(mk mk.cpp)
-target_link_libraries(mk ${LIBRARIES})
+#add_executable(merkle merkle.cpp)
+#target_link_libraries(merkle ${LIBRARIES})
+#
+#
