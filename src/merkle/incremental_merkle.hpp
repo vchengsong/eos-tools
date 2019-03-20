@@ -364,8 +364,52 @@ namespace eosio { namespace chain {
 
 
 
+      /* merkle tree
+       *
+       *                  * root            layer 5 depth 1
+       *          *               *         layer 4 depth 2
+       *      *       *       *       *     layer 3 depth 3
+       *    *   *   *   *   *   *   *   *   layer 2 depth 4
+       *   * * * * * * * * * * * * * * * *  layer 1 depth 5  leafs
+       *
+       *
+       */
 
 
+      digest_type get_block_id_by_num( uint32_t block_num ){
+         // todo
+         return digest_type();
+      }
+
+      incremental_merkle get_inc_mkl_by_block_num( uint32_t block_num ){
+         // todo
+         return incremental_merkle();
+      }
+
+      digest_type get_node_by_layer_index( uint32_t layer, uint32_t index ){
+
+         // assert( layer > 1)
+
+         if (index & 0x1) {  // left
+            uint32_t block_num = index << ( layer - 1);
+            auto inc_mkl = get_inc_mkl_by_block_num( block_num );
+            return inc_mkl._active_nodes.front();
+         } else { // right
+            uint32_t block_num = index << ( layer - 1) ;
+            auto inc_mkl = get_inc_mkl_by_block_num( block_num - 1 );
+            auto active_iter = inc_mkl._active_nodes.begin();
+            auto top = get_block_id_by_num( block_num );
+            uint32_t current_layer = 1;
+
+            for ( auto left_value : inc_mkl._active_nodes ){
+               top = digest_type::hash(make_canonical_pair(left_value, top));
+               ++current_layer;
+               if ( current_layer == layer ){
+                  return top;
+               }
+            }
+         }
+      }
 
 
 
