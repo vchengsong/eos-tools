@@ -41,6 +41,8 @@ incremental_merkle generate_inc_merkle( uint32_t amount ){
       s = "";
    }
 
+   print_merkle_tree( digests );
+
    incremental_merkle inc_merkle;
    digest_type root;
    for (int n = 0; n < amount; n++) {
@@ -65,25 +67,28 @@ void dump_inc_merkle( incremental_merkle inc_merkle ){
 int main() {
 
 
-for ( int i = 1; i < 5000; i ++){
+//for ( int i = 1; i < 5000; i ++){
+//   incremental_merkle inc_merkle = generate_inc_merkle( i );
+//
+//   if ( inc_merkle_verify( inc_merkle ) ){
+//      std::cout << i << "-------yes--------" << std::endl;
+//   } else {
+//      std::cout << i << "-------no--------" << std::endl;
+//   }
+//}
 
-   incremental_merkle inc_merkle = generate_inc_merkle( i );
+   incremental_merkle inc_merkle = generate_inc_merkle( 57 );
 
+   dump_inc_merkle(inc_merkle);
 
-   if ( inc_merkle_verify( inc_merkle ) ){
-      std::cout << i << "-------yes--------" << std::endl;
-   } else {
-      std::cout << i << "-------no--------" << std::endl;
-   }
-
-
-
-
-}
-
-
-
-
+   cout << "layer 7: " << string(get_inc_mkl_layer_node( inc_merkle, 7 )) << endl;
+   cout << "layer 6: " << string(get_inc_mkl_layer_node( inc_merkle, 6 )) << endl;
+   cout << "layer 5: " << string(get_inc_mkl_layer_node( inc_merkle, 5 )) << endl;
+   cout << "layer 4: " << string(get_inc_mkl_layer_node( inc_merkle, 4 )) << endl;
+   cout << "layer 3: " << string(get_inc_mkl_layer_node( inc_merkle, 3 )) << endl;
+   cout << "layer 2: " << string(get_inc_mkl_layer_node( inc_merkle, 2 )) << endl;
+   cout << "layer 1: " << string(get_inc_mkl_layer_node( inc_merkle, 1 )) << endl;
+//   cout << "layer 6: " << string(get_inc_mkl_layer_node( inc_merkle, 6 )) << endl;
    return 0;
 }
 

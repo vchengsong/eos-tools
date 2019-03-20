@@ -286,49 +286,41 @@ namespace eosio { namespace chain {
          return top == inc_mkl.get_root();
       }
 
+      digest_type get_inc_mkl_layer_node( const incremental_merkle& inc_mkl, const uint32_t& layer ){
+         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
+         auto current_depth = max_depth;
+         auto index = inc_mkl._node_count;
+         auto active_iter = inc_mkl._active_nodes.begin();
 
-//
-//      void inc_merkle_verify( incremental_merkle inc_mkl ){
-//         bool partial = false;
-//         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
-//         auto current_depth = max_depth - 1;
-//         auto index = inc_mkl._node_count;
-//         auto top = inc_mkl._active_nodes.front();
-//         auto active_iter = inc_mkl._active_nodes.begin();
-//
-//         while (current_depth > 0) {
-//            if (!(index & 0x1)) { //左边
-//
-//               // calculate the partially realized node value by implying the "right" value is identical
-//               // to the "left" value
-//               top = digest_type::hash(make_canonical_pair(top, top));
-//               partial = true;
-//            } else { //右边
-//               // we are  collapsing from a "right" value and an fully-realized "left"
-//
-//               // pull a "left" value from the previous active nodes
-//               const auto& left_value = *active_iter;
-//               ++active_iter;
-//
-//               // calculate the node
-//               top = digest_type::hash(make_canonical_pair(left_value, top));
-//            }
-//
-//            // move up a level in the tree
-//            current_depth--;
-//            index = index >> 1;
-//         }
-//
-//
-//         if ( top == inc_mkl.get_root() ){
-//            std::cout << "root: " << string(top) << std::endl;
-//            std::cout << "-------yes--------" << std::endl;
-//         } else {
-//            std::cout << "-------no--------" << std::endl;
-//         }
-//
-//
-//      }
+         if ( layer == 1 ){
+            return inc_mkl._active_nodes.back();
+         }
+
+         digest_type current_layer_node;
+
+         while (current_depth > 1) {
+
+            if ((index & 0x1)) { // left
+               current_layer_node = *active_iter;
+               ++active_iter;
+            } else {
+               current_layer_node = digest_type();
+            }
+
+            if ( current_depth == layer ){
+               return current_layer_node;
+            }
+
+            // move up a level in the tree
+            current_depth--;
+            index = index >> 1;
+         }
+
+         return digest_type();
+      }
+
+
+
 
 
 
