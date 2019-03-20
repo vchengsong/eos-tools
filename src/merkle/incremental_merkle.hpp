@@ -319,6 +319,78 @@ namespace eosio { namespace chain {
          return digest_type();
       }
 
+      std::tuple<uint32_t,digest_type> get_branch_root( uint32_t from, incremental_merkle inc_mkl ) {
+
+         // assert( from < to )
+
+         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
+         auto current_depth = max_depth;
+         auto index = inc_mkl._node_count;
+         auto active_iter = inc_mkl._active_nodes.begin();
+
+         digest_type current_layer_node;
+
+         while (current_depth > 1) {
+            std::cout << "current_depth" << current_depth << std::endl;
+
+            if ((index & 0x1)) { // left
+               current_layer_node = *active_iter;
+               ++active_iter;
+
+               if ( current_depth != max_depth ){
+                  uint32_t first, last;
+                  uint32_t depth_diff = max_depth - current_depth;
+                  last = index << depth_diff;
+                  first = last - (1 << depth_diff) + 1;
+
+
+                  std::cout << "first: " << first << " last: " << last << std::endl;
+
+                  if ( first <= from && from <= last ){
+                     return { current_depth, current_layer_node };
+                  }
+               }
+            }
+
+            // move up a level in the tree
+            current_depth--;
+            index = index >> 1;
+         }
+
+         return { 1, inc_mkl._active_nodes.back()};
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

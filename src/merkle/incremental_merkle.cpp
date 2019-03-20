@@ -64,6 +64,10 @@ void dump_inc_merkle( incremental_merkle inc_merkle ){
 
 
 
+
+
+
+
 int main() {
 
 
@@ -76,58 +80,39 @@ int main() {
 //      std::cout << i << "-------no--------" << std::endl;
 //   }
 //}
-
-   incremental_merkle inc_merkle = generate_inc_merkle( 57 );
-
-   dump_inc_merkle(inc_merkle);
-
-   cout << "layer 7: " << string(get_inc_mkl_layer_node( inc_merkle, 7 )) << endl;
-   cout << "layer 6: " << string(get_inc_mkl_layer_node( inc_merkle, 6 )) << endl;
-   cout << "layer 5: " << string(get_inc_mkl_layer_node( inc_merkle, 5 )) << endl;
-   cout << "layer 4: " << string(get_inc_mkl_layer_node( inc_merkle, 4 )) << endl;
-   cout << "layer 3: " << string(get_inc_mkl_layer_node( inc_merkle, 3 )) << endl;
-   cout << "layer 2: " << string(get_inc_mkl_layer_node( inc_merkle, 2 )) << endl;
-   cout << "layer 1: " << string(get_inc_mkl_layer_node( inc_merkle, 1 )) << endl;
+   {
+//   incremental_merkle inc_merkle = generate_inc_merkle( 32 );
+//
+//   dump_inc_merkle(inc_merkle);
+//
+//   cout << "layer 7: " << string(get_inc_mkl_layer_node( inc_merkle, 7 )) << endl;
 //   cout << "layer 6: " << string(get_inc_mkl_layer_node( inc_merkle, 6 )) << endl;
+//   cout << "layer 5: " << string(get_inc_mkl_layer_node( inc_merkle, 5 )) << endl;
+//   cout << "layer 4: " << string(get_inc_mkl_layer_node( inc_merkle, 4 )) << endl;
+//   cout << "layer 3: " << string(get_inc_mkl_layer_node( inc_merkle, 3 )) << endl;
+//   cout << "layer 2: " << string(get_inc_mkl_layer_node( inc_merkle, 2 )) << endl;
+//   cout << "layer 1: " << string(get_inc_mkl_layer_node( inc_merkle, 1 )) << endl;
+   }
+
+   {
+      incremental_merkle inc_merkle = generate_inc_merkle( 1667 );
+
+      dump_inc_merkle(inc_merkle);
+
+      auto res = get_branch_root( 1664, inc_merkle );
+
+      cout << std::get<0>(res) << endl;
+      cout << string( std::get<1>(res))  << endl;
+
+
+
+   }
+
+
+
+
+
+
+
    return 0;
 }
-
-
-
-
-//      cout << "nodes : " << inc_merkle._node_count << endl;
-//      for(auto& n: inc_merkle._active_nodes){
-//         cout << string(n) << endl;
-//      }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
