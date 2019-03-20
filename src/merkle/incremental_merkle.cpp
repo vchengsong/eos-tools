@@ -29,14 +29,7 @@ void print_merkle_tree(vector<digest_type> ids) {
    cout << "root: " << string(ids.front()) << endl;
 }
 
-
-
-
-
-
-int main() {
-   const int amount = 137;
-
+incremental_merkle generate_inc_merkle( uint32_t amount ){
    // std::srand(std::time(nullptr));
    std::srand(0);
    vector<digest_type> digests;
@@ -48,29 +41,46 @@ int main() {
       s = "";
    }
 
-
-   print_merkle_tree( digests );
-
-   cout << endl << endl;
-
-
-   // -- 1 --
    incremental_merkle inc_merkle;
    digest_type root;
    for (int n = 0; n < amount; n++) {
       root = inc_merkle.append(digests[n]);
-//      cout << "digests[" << n << "] = " << string(digests[n]) << endl;
-//      cout << "root = " << string(root) << endl << endl;
+      // cout << "digests[" << n << "] = " << string(digests[n]) << endl;
+      // cout << "root = " << string(root) << endl << endl;
    }
 
+   return inc_merkle;
+}
+
+
+void dump_inc_merkle( incremental_merkle inc_merkle ){
    for( auto d: inc_merkle._active_nodes ){
       cout << "inc merkle digest: " << string(d) << endl;
    }
+}
 
-   cout << endl << endl;
 
 
-   inc_merkle_verify( inc_merkle );
+
+int main() {
+
+
+for ( int i = 1; i < 5000; i ++){
+
+   incremental_merkle inc_merkle = generate_inc_merkle( i );
+
+
+   if ( inc_merkle_verify( inc_merkle ) ){
+      std::cout << i << "-------yes--------" << std::endl;
+   } else {
+      std::cout << i << "-------no--------" << std::endl;
+   }
+
+
+
+
+}
+
 
 
 

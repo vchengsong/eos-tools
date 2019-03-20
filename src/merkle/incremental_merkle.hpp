@@ -248,47 +248,87 @@ namespace eosio { namespace chain {
 
 
 
-      void inc_merkle_verify( incremental_merkle inc_mkl ){
-         bool partial = false;
+      bool inc_merkle_verify( const incremental_merkle& inc_mkl ){
          auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
-         auto current_depth = max_depth - 1;
+         auto current_depth = max_depth;
          auto index = inc_mkl._node_count;
-         auto top = inc_mkl._active_nodes.front();
          auto active_iter = inc_mkl._active_nodes.begin();
+         digest_type top;
 
-         while (current_depth > 0) {
-            if (!(index & 0x1)) { //左边
+         if ( inc_mkl._active_nodes.size() == 1 ){
+            return true;
+         }
 
-               // calculate the partially realized node value by implying the "right" value is identical
-               // to the "left" value
-               top = digest_type::hash(make_canonical_pair(top, top));
-               partial = true;
-            } else { //右边
-               // we are  collapsing from a "right" value and an fully-realized "left"
+         while (current_depth > 1) {
+            if ((index & 0x1)) { // left
 
-               // pull a "left" value from the previous active nodes
-               const auto& left_value = *active_iter;
-               ++active_iter;
+               if ( top == digest_type() ){
+                  const auto& left_value = *active_iter;
+                  ++active_iter;
+                  top = digest_type::hash(make_canonical_pair(left_value, left_value));
+               } else {
+                  top = digest_type::hash(make_canonical_pair(top, top));
+               }
 
-               // calculate the node
-               top = digest_type::hash(make_canonical_pair(left_value, top));
+            } else { // right
+               if ( top != digest_type()){
+                  const auto& left_value = *active_iter;
+                  ++active_iter;
+
+                  top = digest_type::hash(make_canonical_pair(left_value, top));
+               }
             }
 
             // move up a level in the tree
             current_depth--;
-            index = index >> 1;
+            index = (index + 1) >> 1;
          }
-
-
-         if ( top == inc_mkl.get_root() ){
-            std::cout << "root: " << string(top) << std::endl;
-            std::cout << "-------yes--------" << std::endl;
-         } else {
-            std::cout << "-------no--------" << std::endl;
-         }
-
-
+         return top == inc_mkl.get_root();
       }
+
+
+//
+//      void inc_merkle_verify( incremental_merkle inc_mkl ){
+//         bool partial = false;
+//         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
+//         auto current_depth = max_depth - 1;
+//         auto index = inc_mkl._node_count;
+//         auto top = inc_mkl._active_nodes.front();
+//         auto active_iter = inc_mkl._active_nodes.begin();
+//
+//         while (current_depth > 0) {
+//            if (!(index & 0x1)) { //左边
+//
+//               // calculate the partially realized node value by implying the "right" value is identical
+//               // to the "left" value
+//               top = digest_type::hash(make_canonical_pair(top, top));
+//               partial = true;
+//            } else { //右边
+//               // we are  collapsing from a "right" value and an fully-realized "left"
+//
+//               // pull a "left" value from the previous active nodes
+//               const auto& left_value = *active_iter;
+//               ++active_iter;
+//
+//               // calculate the node
+//               top = digest_type::hash(make_canonical_pair(left_value, top));
+//            }
+//
+//            // move up a level in the tree
+//            current_depth--;
+//            index = index >> 1;
+//         }
+//
+//
+//         if ( top == inc_mkl.get_root() ){
+//            std::cout << "root: " << string(top) << std::endl;
+//            std::cout << "-------yes--------" << std::endl;
+//         } else {
+//            std::cout << "-------no--------" << std::endl;
+//         }
+//
+//
+//      }
 
 
 
