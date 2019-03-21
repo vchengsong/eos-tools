@@ -411,6 +411,15 @@ namespace eosio { namespace chain {
          }
       }
 
+      std::vector<digest_type> get_block_merkle_path_to_layer_index( uint32_t from, uint32_t layer, uint32_t index ){
+         // assert()
+
+
+
+
+
+      }
+
 
 
 
