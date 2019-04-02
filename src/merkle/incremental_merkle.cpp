@@ -127,7 +127,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
    digest_type current_layer_node = digest_type();
 
    while (current_layer <= max_layers ) {
-      std::cout << "current_layer" << current_layer << std::endl;
+      std::cout << "current_layer: " << current_layer << std::endl;
 
       if (index & 0x1) { // left
          current_layer_node = *active_iter;
@@ -183,8 +183,10 @@ digest_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& 
    if ( index & 0x1 ){
       auto ret = get_inc_merkle_layer_left_node( reference_inc_merkle, layer ); // search in reference_inc_merkle first
       if ( ret != digest_type() ){
+         ilog("access self inc_merkle ok");
          return ret;
       } else {
+         ilog("access self inc_merkle failed --");
          auto inc_merkle = get_inc_merkle_by_block_num( (index << (layer - 1)) + 1 );
          return inc_merkle._active_nodes.front();
       }
