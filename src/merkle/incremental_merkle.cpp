@@ -127,7 +127,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
    digest_type current_layer_node = digest_type();
 
    while (current_layer <= max_layers ) {
-      std::cout << "current_layer: " << current_layer << std::endl;
+//      std::cout << "current_layer: " << current_layer << std::endl;
 
       if (index & 0x1) { // left
          current_layer_node = *active_iter;
@@ -138,7 +138,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
          last = index << diff;
          first = last - (1 << diff) + 1;
 
-         std::cout << "first: " << first << " last: " << last << std::endl;
+//         std::cout << "first: " << first << " last: " << last << std::endl;
 
          if ( first <= from_block_num && from_block_num <= last ){
             return { current_layer, index, current_layer_node };
@@ -158,7 +158,6 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
 std::vector<std::pair<uint32_t,uint32_t>> get_merkle_path_positions_to_layer_in_full_branch( uint32_t from_block_num, uint32_t to_layer ){
    std::vector<std::pair<uint32_t,uint32_t>> path;
    if ( to_layer < 2 ){ elog("to_layer < 2"); return path; }
-   if ( to_layer > eosio::chain::detail::calcluate_max_depth(from_block_num) ){ elog("to_layer > max_depth"); return path; }
 
    auto index = from_block_num;
    auto current_layer = 2;
@@ -181,17 +180,21 @@ digest_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& 
    if ( layer < 2 ){ elog("to_layer < 2"); return digest_type(); }
 
    if ( index & 0x1 ){
-      auto ret = get_inc_merkle_layer_left_node( reference_inc_merkle, layer ); // search in reference_inc_merkle first
-      if ( ret != digest_type() ){
-         ilog("access self inc_merkle ok");
-         return ret;
-      } else {
-         ilog("access self inc_merkle failed --");
-         auto inc_merkle = get_inc_merkle_by_block_num( (index << (layer - 1)) + 1 );
-         return inc_merkle._active_nodes.front();
+      auto max_layers = eosio::chain::detail::calcluate_max_depth( reference_inc_merkle._node_count );
+      if ( layer < max_layers ){ // search in reference_inc_merkle first
+         auto ret = get_inc_merkle_layer_left_node( reference_inc_merkle, layer );
+         if ( ret != digest_type() ){
+            // ilog("access self inc_merkle ok");
+            return ret;
+         }
       }
+
+      // ilog("access self inc_merkle failed --");
+      auto inc_merkle = get_inc_merkle_by_block_num( (index << (layer - 1)) + 1 );
+      return inc_merkle._active_nodes.front();
    } else {
       auto block_num = index << ( layer - 1 );
+//      ilog("access blockroot_merkle of block ${n}", ("n",block_num));
       auto inc_merkle = get_inc_merkle_by_block_num( block_num );
       auto active_iter = inc_merkle._active_nodes.begin();
       auto block_id = get_block_id_by_num( block_num );
@@ -212,11 +215,21 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
    std::vector<digest_type> result;
    if ( from_block_num >= anchor_block_num ){ elog("from_block_num >= anchor_block_num"); return result; }
 
-   auto inc_merkle = get_inc_merkle_by_block_num( anchor_block_num );
+   auto anchor_block_inc_merkle = get_inc_merkle_by_block_num( anchor_block_num );
    uint32_t    full_root_layer;
    uint32_t    full_root_index;
    digest_type full_root_value;
-   std::tie( full_root_layer, full_root_index, full_root_value ) = get_inc_merkle_full_branch_root_cover_from( from_block_num, inc_merkle );
+   std::tie( full_root_layer, full_root_index, full_root_value ) = get_inc_merkle_full_branch_root_cover_from( from_block_num, anchor_block_inc_merkle );
+
+//   cout << "full_root_layer = " << full_root_layer << endl;
+//   cout << "full_root_index = " << full_root_index << endl;
+//   cout << "full_root_value = " << string(full_root_value) << endl;
+
+   if( full_root_layer == 1 ){
+      result.push_back( full_root_value );
+      return result;
+   }
+
    auto position_path = get_merkle_path_positions_to_layer_in_full_branch( from_block_num, full_root_layer );
 
    if ( position_path.back().first != full_root_layer || position_path.back().second != full_root_index ){
@@ -233,9 +246,10 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
       result.push_back( get_block_id_by_num( from_block_num ) );
    }
 
-//   position_path.erase( --position_path.end() );
+   auto from_block_inc_merkle = get_inc_merkle_by_block_num( from_block_num );
+   position_path.erase( --position_path.end() );
    for( auto p : position_path ){
-      auto value = get_merkle_node_value_in_full_sub_branch( inc_merkle, p.first, p.second );
+      auto value = get_merkle_node_value_in_full_sub_branch( from_block_inc_merkle, p.first, p.second );
       if ( p.second & 0x1 ){
          result.push_back( make_canonical_left(value) );
       } else {
@@ -243,6 +257,7 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
       }
    }
 
+   result.push_back( full_root_value );
    return result;
 }
 
@@ -323,9 +338,11 @@ incremental_merkle generate_inc_merkle( uint32_t amount ){
 
 
 void dump_inc_merkle( incremental_merkle inc_merkle ){
+   cout << "dump_inc_merkle start" << endl;
    for( auto d: inc_merkle._active_nodes ){
       cout << "inc merkle digest: " << string(d) << endl;
    }
+   cout << "dump_inc_merkle end" << endl;
 }
 
 void init(){
@@ -336,12 +353,8 @@ void init(){
 int main() {
    init();
 
-   // variables
-   uint32_t sim_chain_length = 300;
-   uint32_t from_block_num = 100;
-   uint32_t anchor_block_num = 251;
-
    // fill sim_chain
+   uint32_t sim_chain_length = 2000;
    sim_block block_one;
    block_one.block_num = 1;
    block_one.block_id = generate_digest();
@@ -357,30 +370,76 @@ int main() {
       sim_chain.push_back( block );
    }
 
-   // dump anchor_block_num inc_merkle
-   dump_inc_merkle( sim_chain[anchor_block_num-1].blockroot_merkle );
+   // test
+   if(true){
+      uint32_t anchor_start_num = 200;
+      uint32_t anchor_end_num = 1990;
+      for( int anchor_block_num = anchor_start_num; anchor_block_num <= anchor_end_num; anchor_block_num++){
 
-   // get and dump path
-   auto path_nodes = get_block_id_merkle_path_to_anchor_block(from_block_num,anchor_block_num);
-   for( auto& node : path_nodes ){
-      cout << string(node) << endl;
+         uint32_t start_block_num = 100;
+         for( int from_block_num = start_block_num; from_block_num <= anchor_block_num - 1; from_block_num++){
+            auto path_nodes = get_block_id_merkle_path_to_anchor_block( from_block_num, anchor_block_num );
+            cout << "from->to:["<<from_block_num<<","<<anchor_block_num<<"] ";
+            if ( verify_merkle_path( path_nodes ) ){
+               cout<< "--- yes ---" << endl;
+            } else {
+               cout<< "--- no ---" << endl;
+            }
+         }
+
+      }
+
+
+
    }
 
-   // verify
-   if ( verify_merkle_path( path_nodes ) ){
-      cout<< "--- yes ---" << endl;
-   } else {
-      cout<< "--- no ---" << endl;
+
+
+
+
+
+
+
+
+
+
+   if(false){
+      uint32_t start_block_num = 100;
+      uint32_t anchor_block_num = 251;
+      for( int from_block_num = start_block_num; from_block_num <= anchor_block_num - 1; from_block_num++){
+         auto path_nodes = get_block_id_merkle_path_to_anchor_block( from_block_num, anchor_block_num );
+         cout << "from->to:["<<from_block_num<<","<<anchor_block_num<<"] ";
+         if ( verify_merkle_path( path_nodes ) ){
+            cout<< "--- yes ---" << endl;
+         } else {
+            cout<< "--- no ---" << endl;
+         }
+      }
    }
 
 
 
 
+   if(false){
+      uint32_t from_block_num = 100;
+      uint32_t anchor_block_num = 251;
+      // dump anchor_block_num inc_merkle
+      dump_inc_merkle( sim_chain[anchor_block_num-1].blockroot_merkle );
+      // get and dump path
+      auto path_nodes = get_block_id_merkle_path_to_anchor_block( from_block_num, anchor_block_num );
 
+      cout << "dump path_nodes" << endl;
+      for( auto& node : path_nodes ){
+         cout << string(node) << endl;
+      }
 
-
-
-
+      // verify
+      if ( verify_merkle_path( path_nodes ) ){
+         cout<< "--- yes ---" << endl;
+      } else {
+         cout<< "--- no ---" << endl;
+      }
+   }
 
 
 
