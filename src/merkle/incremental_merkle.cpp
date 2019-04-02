@@ -31,7 +31,7 @@ std::vector<sim_block> sim_chain;
  */
 
 bool inc_merkle_verify( const incremental_merkle& inc_mkl ){
-   auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
+   auto max_depth = eosio::chain::detail::calcluate_max_depth( inc_mkl._node_count );
    auto current_depth = max_depth;
    auto index = inc_mkl._node_count;
    auto active_iter = inc_mkl._active_nodes.begin();
@@ -77,7 +77,7 @@ incremental_merkle get_inc_merkle_by_block_num( uint32_t block_num ){
 }
 
 digest_type get_inc_merkle_layer_left_node( const incremental_merkle& inc_mkl, const uint32_t& layer ){
-   auto max_layers = detail::calcluate_max_depth( inc_mkl._node_count );
+   auto max_layers = eosio::chain::detail::calcluate_max_depth( inc_mkl._node_count );
 
    if ( inc_mkl._node_count == 0 ){ elog("inc_mkl._node_count == 0"); return digest_type(); }
    if ( layer >= max_layers ){ elog("layer >= max_layers"); return digest_type(); }
@@ -119,7 +119,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
       return std::tuple<uint32_t,uint32_t,digest_type>();
    }
 
-   auto max_layers = detail::calcluate_max_depth( inc_mkl._node_count );
+   auto max_layers = eosio::chain::detail::calcluate_max_depth( inc_mkl._node_count );
    auto current_layer = 1;
    auto index = inc_mkl._node_count;
    auto active_iter = inc_mkl._active_nodes.begin();
@@ -158,7 +158,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
 std::vector<std::pair<uint32_t,uint32_t>> get_merkle_path_positions_to_layer_in_full_branch( uint32_t from_block_num, uint32_t to_layer ){
    std::vector<std::pair<uint32_t,uint32_t>> path;
    if ( to_layer < 2 ){ elog("to_layer < 2"); return path; }
-   if ( to_layer > detail::calcluate_max_depth(from_block_num) ){ elog("to_layer > max_depth"); return path; }
+   if ( to_layer > eosio::chain::detail::calcluate_max_depth(from_block_num) ){ elog("to_layer > max_depth"); return path; }
 
    auto index = from_block_num;
    auto current_layer = 2;
@@ -270,16 +270,18 @@ void print_merkle_tree(vector<digest_type> ids) {
    cout << "root: " << string(ids.front()) << endl;
 }
 
-incremental_merkle generate_inc_merkle( uint32_t amount ){
-   // std::srand(std::time(nullptr));
-   std::srand(0);
-   vector<digest_type> digests;
+digest_type generate_digest(){
+   string s;
+   for ( int i = 0; i < 10; i++ ) {
+      s.append(to_string(std::rand()));
+   }
+   return digest_type{s};
+}
 
+incremental_merkle generate_inc_merkle( uint32_t amount ){
+   vector<digest_type> digests;
    for (int n = 0; n < amount; n++) {
-      string s;
-      for (int i = 0; i < 10; i++) { s.append(to_string(std::rand())); }
-      digests.push_back(digest_type{s});
-      s = "";
+      digests.push_back( generate_digest() );
    }
 
    print_merkle_tree( digests );
@@ -291,7 +293,6 @@ incremental_merkle generate_inc_merkle( uint32_t amount ){
       // cout << "digests[" << n << "] = " << string(digests[n]) << endl;
       // cout << "root = " << string(root) << endl << endl;
    }
-
    return inc_merkle;
 }
 
@@ -304,6 +305,12 @@ void dump_inc_merkle( incremental_merkle inc_merkle ){
 
 
 int main() {
+    std::srand(std::time(nullptr));
+//   std::srand(0);
+
+
+   cout << string(generate_digest()) << endl;
+   cout << string(generate_digest()) << endl;
 
    // fill sim_chain
 
