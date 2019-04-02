@@ -94,20 +94,20 @@ int main() {
 //   cout << "layer 1: " << string(get_inc_mkl_layer_node( inc_merkle, 1 )) << endl;
    }
 
-   {
-      incremental_merkle inc_merkle = generate_inc_merkle( 1667 );
-
-      dump_inc_merkle(inc_merkle);
-
-      auto res = get_branch_root( 1664, inc_merkle );
-
-      cout << std::get<0>(res) << endl;
-      cout << string( std::get<1>(res))  << endl;
-
-
-
-   }
-
+//   {
+//      incremental_merkle inc_merkle = generate_inc_merkle( 1667 );
+//
+//      dump_inc_merkle(inc_merkle);
+//
+//      auto res = get_branch_root( 1664, inc_merkle );
+//
+//      cout << std::get<0>(res) << endl;
+//      cout << string( std::get<1>(res))  << endl;
+//
+//
+//
+//   }
+//
 
 
 

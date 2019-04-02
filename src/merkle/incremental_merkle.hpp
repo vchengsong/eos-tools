@@ -384,6 +384,7 @@ namespace eosio { namespace chain {
          }
 
          elog("can not get_inc_merkle_full_branch_root_cover_from");
+         return std::tuple<uint32_t,uint32_t,digest_type>();
       }
 
       // nodes in layer range [ 2, max_layers ]
@@ -397,19 +398,19 @@ namespace eosio { namespace chain {
          while ( current_layer < to_layer ){
             index = ( index + 1 ) >> 1;
             if ( index & 0x1 ){
-               path.emplace_back( current_layer, index + 1 )
+               path.emplace_back( current_layer, index + 1 );
             } else{
-               path.emplace_back( current_layer, index - 1 )
+               path.emplace_back( current_layer, index - 1 );
             }
             current_layer++;
          }
 
          index = ( index + 1 ) >> 1;
-         path.emplace_back( to_layer, index )
+         path.emplace_back( to_layer, index );
          return path;
       }
 
-      digetst_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& reference_inc_merkle, uint32_t layer, uint32_t index ){
+      digest_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& reference_inc_merkle, uint32_t layer, uint32_t index ){
          if ( layer < 2 ){ elog("to_layer < 2"); return digest_type(); }
 
          if ( index & 0x1 ){
@@ -417,7 +418,7 @@ namespace eosio { namespace chain {
             if ( ret != digest_type() ){
                return ret;
             } else {
-               auto inc_merkle = get_inc_merkle_by_block_num( index << ( layer - 1 ) + 1 );
+               auto inc_merkle = get_inc_merkle_by_block_num( (index << (layer - 1)) + 1 );
                return inc_merkle._active_nodes.front();
             }
          } else {
@@ -443,7 +444,10 @@ namespace eosio { namespace chain {
          if ( from_block_num >= anchor_block_num ){ elog("from_block_num >= anchor_block_num"); return result; }
 
          auto inc_merkle = get_inc_merkle_by_block_num( anchor_block_num );
-         auto [ full_root_layer, full_root_index, full_root_value ] = get_inc_merkle_full_branch_root_cover_from( from_block_num, inc_merkle );
+         uint32_t full_root_layer;
+         uint32_t full_root_index;
+         digest_type full_root_value;
+         std::tie( full_root_layer, full_root_index, full_root_value ) = get_inc_merkle_full_branch_root_cover_from( from_block_num, inc_merkle );
          auto position_path = get_merkle_path_positions_to_layer_in_full_branch( from_block_num, full_root_layer );
 
          if ( position_path.back().first != full_root_layer || position_path.back().second != full_root_index ){
@@ -453,14 +457,14 @@ namespace eosio { namespace chain {
 
          // add the first two elements to merkle path
          if ( from_block_num % 2 == 1 ){ // left side
-            result.push_back( get_block_id_by_num( block_num ) );
-            result.push_back( get_block_id_by_num( block_num + 1 ) );
+            result.push_back( get_block_id_by_num( from_block_num ) );
+            result.push_back( get_block_id_by_num( from_block_num + 1 ) );
          } else { // right side
-            result.push_back( get_block_id_by_num( block_num - 1) );
-            result.push_back( get_block_id_by_num( block_num ) );
+            result.push_back( get_block_id_by_num( from_block_num - 1) );
+            result.push_back( get_block_id_by_num( from_block_num ) );
          }
 
-         position_path.erase(position_path.back());
+         position_path.erase( --position_path.end() );
          for( auto p : position_path ){
             auto value = get_merkle_node_value_in_full_sub_branch( inc_merkle, p.first, p.second );
             if ( p.second & 0x1 ){
@@ -469,6 +473,8 @@ namespace eosio { namespace chain {
                result.push_back( make_canonical_right(value) );
             }
          }
+
+         return result;
       }
 
 
