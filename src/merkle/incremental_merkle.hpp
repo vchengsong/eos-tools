@@ -286,9 +286,36 @@ namespace eosio { namespace chain {
          return top == inc_mkl.get_root();
       }
 
-      digest_type get_inc_mkl_layer_node( const incremental_merkle& inc_mkl, const uint32_t& layer ){
-         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
-         auto current_depth = max_depth;
+
+      /** merkle tree
+       *  layer, Increase upward from leaf node layer, starting from 1
+       *  layer index, Increase from left to right in every layer, starting from 1
+       *
+       *                  * root            layer 5 depth 1
+       *          *               *         layer 4 depth 2
+       *      *       *       *       *     layer 3 depth 3
+       *    *   *   *   *   *   *   *   *   layer 2 depth 4
+       *   * * * * * * * * * * * * * * * *  layer 1 depth 5  leafs
+       *
+       */
+
+      digest_type get_block_id_by_num( uint32_t block_num ){
+         // todo
+         return digest_type();
+      }
+
+      incremental_merkle get_inc_merkle_by_block_num( uint32_t block_num ){
+         // todo
+         return incremental_merkle();
+      }
+
+      digest_type get_inc_merkle_layer_left_node( const incremental_merkle& inc_mkl, const uint32_t& layer ){
+         auto max_layers = detail::calcluate_max_depth( inc_mkl._node_count );
+
+         if ( inc_mkl._node_count == 0 ){ elog("inc_mkl._node_count == 0"); return digest_type(); }
+         if ( layer >= max_layers ){ elog("layer >= max_layers"); return digest_type(); }
+
+         auto current_layer = 1;
          auto index = inc_mkl._node_count;
          auto active_iter = inc_mkl._active_nodes.begin();
 
@@ -298,7 +325,7 @@ namespace eosio { namespace chain {
 
          digest_type current_layer_node;
 
-         while (current_depth > 1) {
+         while ( current_layer < max_layers ) {
 
             if ((index & 0x1)) { // left
                current_layer_node = *active_iter;
@@ -307,147 +334,142 @@ namespace eosio { namespace chain {
                current_layer_node = digest_type();
             }
 
-            if ( current_depth == layer ){
+            if ( current_layer == layer ){
                return current_layer_node;
             }
 
             // move up a level in the tree
-            current_depth--;
+            current_layer++;
             index = index >> 1;
          }
 
          return digest_type();
       }
 
-      std::tuple<uint32_t,digest_type> get_branch_root( uint32_t from, incremental_merkle inc_mkl ) {
+      std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_from( const uint32_t& from_block_num, const incremental_merkle& inc_mkl ) {
+         if ( from_block_num > inc_mkl._node_count ){
+            elog("from_block_num > inc_mkl._node_count");
+            return std::tuple<uint32_t,uint32_t,digest_type>();
+         }
 
-         // assert( from < to )
-
-         auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
-         auto current_depth = max_depth;
+         auto max_layers = detail::calcluate_max_depth( inc_mkl._node_count );
+         auto current_layer = 1;
          auto index = inc_mkl._node_count;
          auto active_iter = inc_mkl._active_nodes.begin();
 
-         digest_type current_layer_node;
+         digest_type current_layer_node = digest_type();
 
-         while (current_depth > 1) {
-            std::cout << "current_depth" << current_depth << std::endl;
+         while (current_layer <= max_layers ) {
+            std::cout << "current_layer" << current_layer << std::endl;
 
-            if ((index & 0x1)) { // left
+            if (index & 0x1) { // left
                current_layer_node = *active_iter;
                ++active_iter;
 
-               if ( current_depth != max_depth ){
-                  uint32_t first, last;
-                  uint32_t depth_diff = max_depth - current_depth;
-                  last = index << depth_diff;
-                  first = last - (1 << depth_diff) + 1;
+               uint32_t first, last;
+               uint32_t diff = current_layer - 1;
+               last = index << diff;
+               first = last - (1 << diff) + 1;
 
+               std::cout << "first: " << first << " last: " << last << std::endl;
 
-                  std::cout << "first: " << first << " last: " << last << std::endl;
-
-                  if ( first <= from && from <= last ){
-                     return { current_depth, current_layer_node };
-                  }
+               if ( first <= from_block_num && from_block_num <= last ){
+                  return { current_layer, index, current_layer_node };
                }
             }
 
             // move up a level in the tree
-            current_depth--;
+            current_layer++;
             index = index >> 1;
          }
 
-         return { 1, inc_mkl._active_nodes.back()};
+         elog("can not get_inc_merkle_full_branch_root_cover_from");
       }
 
+      // nodes in layer range [ 2, max_layers ]
+      std::vector<std::pair<uint32_t,uint32_t>> get_merkle_path_positions_to_layer_in_full_branch( uint32_t from_block_num, uint32_t to_layer ){
+         std::vector<std::pair<uint32_t,uint32_t>> path;
+         if ( to_layer < 2 ){ elog("to_layer < 2"); return path; }
+         if ( to_layer > detail::calcluate_max_depth(from_block_num) ){ elog("to_layer > max_depth"); return path; }
 
-
-
-
-      /* merkle tree
-       *
-       *                  * root            layer 5 depth 1
-       *          *               *         layer 4 depth 2
-       *      *       *       *       *     layer 3 depth 3
-       *    *   *   *   *   *   *   *   *   layer 2 depth 4
-       *   * * * * * * * * * * * * * * * *  layer 1 depth 5  leafs
-       *
-       *
-       */
-
-
-      digest_type get_block_id_by_num( uint32_t block_num ){
-         // todo
-         return digest_type();
-      }
-
-      incremental_merkle get_inc_mkl_by_block_num( uint32_t block_num ){
-         // todo
-         return incremental_merkle();
-      }
-
-      digest_type get_node_by_layer_index( uint32_t layer, uint32_t index ){
-
-         // assert( layer > 1)
-
-         if (index & 0x1) {  // left
-            uint32_t block_num = index << ( layer - 1);
-            auto inc_mkl = get_inc_mkl_by_block_num( block_num );
-            return inc_mkl._active_nodes.front();
-         } else { // right
-            uint32_t block_num = index << ( layer - 1) ;
-            auto inc_mkl = get_inc_mkl_by_block_num( block_num - 1 );
-            auto active_iter = inc_mkl._active_nodes.begin();
-            auto top = get_block_id_by_num( block_num );
-            uint32_t current_layer = 1;
-
-            for ( auto left_value : inc_mkl._active_nodes ){
-               top = digest_type::hash(make_canonical_pair(left_value, top));
-               ++current_layer;
-               if ( current_layer == layer ){
-                  return top;
-               }
+         auto index = from_block_num;
+         auto current_layer = 2;
+         while ( current_layer < to_layer ){
+            index = ( index + 1 ) >> 1;
+            if ( index & 0x1 ){
+               path.emplace_back( current_layer, index + 1 )
+            } else{
+               path.emplace_back( current_layer, index - 1 )
             }
+            current_layer++;
+         }
+
+         index = ( index + 1 ) >> 1;
+         path.emplace_back( to_layer, index )
+         return path;
+      }
+
+      digetst_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& reference_inc_merkle, uint32_t layer, uint32_t index ){
+         if ( layer < 2 ){ elog("to_layer < 2"); return digest_type(); }
+
+         if ( index & 0x1 ){
+            auto ret = get_inc_merkle_layer_left_node( reference_inc_merkle, layer ); // search in reference_inc_merkle first
+            if ( ret != digest_type() ){
+               return ret;
+            } else {
+               auto inc_merkle = get_inc_merkle_by_block_num( index << ( layer - 1 ) + 1 );
+               return inc_merkle._active_nodes.front();
+            }
+         } else {
+            auto block_num = index << ( layer - 1 );
+            auto inc_merkle = get_inc_merkle_by_block_num( block_num );
+            auto active_iter = inc_merkle._active_nodes.begin();
+            auto block_id = get_block_id_by_num( block_num );
+
+            uint32_t current_layer = 1;
+            digest_type top = block_id;
+            while ( current_layer < layer ){
+               const auto& left_value = *active_iter;
+               ++active_iter;
+               top = digest_type::hash(make_canonical_pair(left_value, top));
+               current_layer++;
+            }
+            return top;
          }
       }
 
-      std::vector<digest_type> get_block_merkle_path_to_layer_index( uint32_t from, uint32_t layer, uint32_t index ){
-         // assert()
+      std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from_block_num, uint32_t anchor_block_num ){
+         std::vector<digest_type> result;
+         if ( from_block_num >= anchor_block_num ){ elog("from_block_num >= anchor_block_num"); return result; }
 
+         auto inc_merkle = get_inc_merkle_by_block_num( anchor_block_num );
+         auto [ full_root_layer, full_root_index, full_root_value ] = get_inc_merkle_full_branch_root_cover_from( from_block_num, inc_merkle );
+         auto position_path = get_merkle_path_positions_to_layer_in_full_branch( from_block_num, full_root_layer );
 
+         if ( position_path.back().first != full_root_layer || position_path.back().second != full_root_index ){
+            elog("internal error! position_path.back() calculate failed");
+            return result;
+         }
 
+         // add the first two elements to merkle path
+         if ( from_block_num % 2 == 1 ){ // left side
+            result.push_back( get_block_id_by_num( block_num ) );
+            result.push_back( get_block_id_by_num( block_num + 1 ) );
+         } else { // right side
+            result.push_back( get_block_id_by_num( block_num - 1) );
+            result.push_back( get_block_id_by_num( block_num ) );
+         }
 
-
+         position_path.erase(position_path.back());
+         for( auto p : position_path ){
+            auto value = get_merkle_node_value_in_full_sub_branch( inc_merkle, p.first, p.second );
+            if ( p.second & 0x1 ){
+               result.push_back( make_canonical_left(value) );
+            } else {
+               result.push_back( make_canonical_right(value) );
+            }
+         }
       }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
    } } /// eosio::chain
