@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <eosio/chain/incremental_merkle.hpp>
-//#include "incremental_merkle.hpp"
 
 using namespace eosio::chain;
 using namespace std;
