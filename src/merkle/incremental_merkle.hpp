@@ -248,6 +248,20 @@ namespace eosio { namespace chain {
 
 
 
+
+
+      /** merkle tree
+       *  layer, Increase upward from leaf node layer, starting from 1
+       *  layer index, Increase from left to right in every layer, starting from 1
+       *
+       *                  * root            layer 5 depth 1
+       *          *               *         layer 4 depth 2
+       *      *       *       *       *     layer 3 depth 3
+       *    *   *   *   *   *   *   *   *   layer 2 depth 4
+       *   * * * * * * * * * * * * * * * *  layer 1 depth 5  leafs
+       *
+       */
+
       bool inc_merkle_verify( const incremental_merkle& inc_mkl ){
          auto max_depth = detail::calcluate_max_depth( inc_mkl._node_count );
          auto current_depth = max_depth;
@@ -285,19 +299,6 @@ namespace eosio { namespace chain {
          }
          return top == inc_mkl.get_root();
       }
-
-
-      /** merkle tree
-       *  layer, Increase upward from leaf node layer, starting from 1
-       *  layer index, Increase from left to right in every layer, starting from 1
-       *
-       *                  * root            layer 5 depth 1
-       *          *               *         layer 4 depth 2
-       *      *       *       *       *     layer 3 depth 3
-       *    *   *   *   *   *   *   *   *   layer 2 depth 4
-       *   * * * * * * * * * * * * * * * *  layer 1 depth 5  leafs
-       *
-       */
 
       digest_type get_block_id_by_num( uint32_t block_num ){
          // todo
