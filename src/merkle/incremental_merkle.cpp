@@ -211,8 +211,8 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
    if ( from_block_num >= anchor_block_num ){ elog("from_block_num >= anchor_block_num"); return result; }
 
    auto inc_merkle = get_inc_merkle_by_block_num( anchor_block_num );
-   uint32_t full_root_layer;
-   uint32_t full_root_index;
+   uint32_t    full_root_layer;
+   uint32_t    full_root_index;
    digest_type full_root_value;
    std::tie( full_root_layer, full_root_index, full_root_value ) = get_inc_merkle_full_branch_root_cover_from( from_block_num, inc_merkle );
    auto position_path = get_merkle_path_positions_to_layer_in_full_branch( from_block_num, full_root_layer );
@@ -231,7 +231,7 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
       result.push_back( get_block_id_by_num( from_block_num ) );
    }
 
-   position_path.erase( --position_path.end() );
+//   position_path.erase( --position_path.end() );
    for( auto p : position_path ){
       auto value = get_merkle_node_value_in_full_sub_branch( inc_merkle, p.first, p.second );
       if ( p.second & 0x1 ){
@@ -242,6 +242,29 @@ std::vector<digest_type> get_block_id_merkle_path_to_anchor_block( uint32_t from
    }
 
    return result;
+}
+
+bool verify_merkle_path( const std::vector<digest_type>& merkle_path ) {
+   if ( merkle_path.size() == 0 ){ elog("merkle_path is empty"); return false; }
+   if ( merkle_path.size() == 1 ){ return true; }
+
+   digest_type result = digest_type::hash( make_canonical_pair(merkle_path[0], merkle_path[1]) );
+
+   for( auto i = 0; i < merkle_path.size() - 3; ++i ){
+      digest_type left;
+      digest_type right;
+
+      if ( is_canonical_left(merkle_path[i+2]) ){
+         left = merkle_path[i+2];
+         right = make_canonical_right( result );
+      } else {
+         left = make_canonical_left( result );
+         right = merkle_path[i+2];
+      }
+      result = digest_type::hash( std::make_pair(left,right) );
+   }
+
+   return result == merkle_path.back();
 }
 
 
@@ -303,29 +326,50 @@ void dump_inc_merkle( incremental_merkle inc_merkle ){
    }
 }
 
+void init(){
+   std::srand(std::time(nullptr));
+//   std::srand(0);
+}
 
 int main() {
-    std::srand(std::time(nullptr));
-//   std::srand(0);
+   init();
 
-
-   cout << string(generate_digest()) << endl;
-   cout << string(generate_digest()) << endl;
+   // variables
+   uint32_t sim_chain_length = 300;
+   uint32_t from_block_num = 100;
+   uint32_t anchor_block_num = 251;
 
    // fill sim_chain
+   sim_block block_one;
+   block_one.block_num = 1;
+   block_one.block_id = generate_digest();
+   block_one.blockroot_merkle = incremental_merkle();
+   sim_chain.push_back(block_one);
 
+   for( int i = 0; i < sim_chain_length; i++ ){
+      sim_block block;
+      block.block_num = sim_chain.back().block_num + 1;
+      block.block_id = generate_digest();
+      block.blockroot_merkle = sim_chain.back().blockroot_merkle;
+      block.blockroot_merkle.append(sim_chain.back().block_id);
+      sim_chain.push_back( block );
+   }
 
+   // dump anchor_block_num inc_merkle
+   dump_inc_merkle( sim_chain[anchor_block_num-1].blockroot_merkle );
 
+   // get and dump path
+   auto path_nodes = get_block_id_merkle_path_to_anchor_block(from_block_num,anchor_block_num);
+   for( auto& node : path_nodes ){
+      cout << string(node) << endl;
+   }
 
-
-
-
-
-
-
-
-
-
+   // verify
+   if ( verify_merkle_path( path_nodes ) ){
+      cout<< "--- yes ---" << endl;
+   } else {
+      cout<< "--- no ---" << endl;
+   }
 
 
 
