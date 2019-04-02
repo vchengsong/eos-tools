@@ -127,7 +127,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
    digest_type current_layer_node = digest_type();
 
    while (current_layer <= max_layers ) {
-//      std::cout << "current_layer: " << current_layer << std::endl;
+      // std::cout << "current_layer: " << current_layer << std::endl;
 
       if (index & 0x1) { // left
          current_layer_node = *active_iter;
@@ -138,7 +138,7 @@ std::tuple<uint32_t,uint32_t,digest_type> get_inc_merkle_full_branch_root_cover_
          last = index << diff;
          first = last - (1 << diff) + 1;
 
-//         std::cout << "first: " << first << " last: " << last << std::endl;
+         // std::cout << "first: " << first << " last: " << last << std::endl;
 
          if ( first <= from_block_num && from_block_num <= last ){
             return { current_layer, index, current_layer_node };
@@ -194,7 +194,7 @@ digest_type get_merkle_node_value_in_full_sub_branch( const incremental_merkle& 
       return inc_merkle._active_nodes.front();
    } else {
       auto block_num = index << ( layer - 1 );
-//      ilog("access blockroot_merkle of block ${n}", ("n",block_num));
+      // ilog("access blockroot_merkle of block ${n}", ("n",block_num));
       auto inc_merkle = get_inc_merkle_by_block_num( block_num );
       auto active_iter = inc_merkle._active_nodes.begin();
       auto block_id = get_block_id_by_num( block_num );
@@ -354,11 +354,14 @@ int main() {
    init();
 
    // fill sim_chain
+   uint32_t sim_chain_start_block_num = 16385;
    uint32_t sim_chain_length = 2000;
+
    sim_block block_one;
-   block_one.block_num = 1;
+   block_one.block_num = 16385;
    block_one.block_id = generate_digest();
-   block_one.blockroot_merkle = incremental_merkle();
+   block_one.blockroot_merkle._node_count = 16384;
+   block_one.blockroot_merkle._active_nodes.push_back( generate_digest() );
    sim_chain.push_back(block_one);
 
    for( int i = 0; i < sim_chain_length; i++ ){
@@ -372,11 +375,12 @@ int main() {
 
    // test
    if(true){
-      uint32_t anchor_start_num = 200;
-      uint32_t anchor_end_num = 1990;
+      uint32_t base_num = sim_chain_start_block_num;
+      uint32_t anchor_start_num = base_num + 200;
+      uint32_t anchor_end_num = base_num + 1990;
       for( int anchor_block_num = anchor_start_num; anchor_block_num <= anchor_end_num; anchor_block_num++){
 
-         uint32_t start_block_num = 100;
+         uint32_t start_block_num = base_num + 100;
          for( int from_block_num = start_block_num; from_block_num <= anchor_block_num - 1; from_block_num++){
             auto path_nodes = get_block_id_merkle_path_to_anchor_block( from_block_num, anchor_block_num );
             cout << "from->to:["<<from_block_num<<","<<anchor_block_num<<"] ";
@@ -387,19 +391,13 @@ int main() {
             }
          }
 
+         cout<<endl<<endl<<endl<<endl;
+
       }
 
 
 
    }
-
-
-
-
-
-
-
-
 
 
 
